@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   AppBar,
   Toolbar,
@@ -19,13 +19,32 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import NotificationsIcon from '@mui/icons-material/Notifications'
 import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import ImageIcon from '@mui/icons-material/Image'
+import RouteIcon from '@mui/icons-material/Route'
+import { initializeApp } from "firebase/app"
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import ExitToAppIcon from "@mui/icons-material/ExitToApp"
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDeJaSO7XIg7KVCsNthrI7u2F4LYNRJGjw",
+  authDomain: "swiftvision-7c096.firebaseapp.com",
+  projectId: "swiftvision-7c096",
+  storageBucket: "swiftvision-7c096.firebasestorage.app",
+  messagingSenderId: "547337108395",
+  appId: "1:547337108395:web:aaf2959b0b956363c7f0ee",
+  measurementId: "G-3Z97WZBMEQ",
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const provider = new GoogleAuthProvider();
 
 // Styled components
 const StyledCard = styled(Card)(({ theme }) => ({
   height: '100%',
   backgroundColor: 'rgba(32, 32, 32, 0.9)',
   color: theme.palette.common.white,
-  border: '2px solid #4CAF50', // Borde verde
   '& .MuiCardHeader-root': {
     padding: theme.spacing(1),
   },
@@ -40,7 +59,7 @@ const CameraStatus = styled('div')(({ theme }) => ({
     width: 8,
     height: 8,
     borderRadius: '50%',
-    backgroundColor: '#4CAF50', // Color verde
+    backgroundColor: '#09BA83', // Color verde
   },
 }))
 
@@ -49,11 +68,12 @@ const PlaceholderImage = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  border: '2px solid #4CAF50',
+
   borderRadius: theme.spacing(1),
+  cursor: 'pointer', // Añadir cursor de puntero
   '& svg': {
     fontSize: 64,
-    color: '#4CAF50',
+    color: '#09BA83',
   },
 }))
 
@@ -62,15 +82,72 @@ const RouteMap = styled(Paper)(({ theme }) => ({
   backgroundColor: 'rgba(32, 32, 32, 0.9)',
   color: theme.palette.common.white,
   padding: theme.spacing(2),
-  border: '2px solid #4CAF50', // Borde verde
+  //border: '2px solid #4CAF50', // Borde verde
 }))
 
 export default function SwiftVision() {
   const [tabIndex, setTabIndex] = useState(0)
+  const [videoUrls, setVideoUrls] = useState<{ [key: number]: string | null }>({})
+  const [routeImageUrl, setRouteImageUrl] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [userPhoto, setUserPhoto] = useState<string | null>(null)
+  const [avatarClickable, setAvatarClickable] = useState<boolean>(true)
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue)
   }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, cameraId: number) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setVideoUrls((prev) => ({ ...prev, [cameraId]: url }))
+    }
+  }
+
+  const handleRouteImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setRouteImageUrl(url)
+    }
+  }
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("email");
+    if (savedEmail) {
+      setUserEmail(savedEmail);
+      const savedPhoto = localStorage.getItem("photoURL");
+      setUserPhoto(savedPhoto);
+      setAvatarClickable(false);
+    }
+  }, []);
+
+  // Sign in
+  const handleSignIn = () => {
+    signInWithPopup(auth, provider)
+      .then((data) => {
+        setUserEmail(data.user.email);
+        setUserPhoto(data.user.photoURL);
+        localStorage.setItem("email", data.user.email);
+        localStorage.setItem("photoURL", data.user.photoURL || "");
+        setAvatarClickable(false);
+      })
+      .catch((error) => {
+        console.error("Error signing in: ", error);
+      });
+  };
+
+  // Sign out
+  const handleSignOut = () => {
+    auth.signOut().then(() => {
+      setUserEmail(null);
+      setUserPhoto(null);
+      localStorage.removeItem("email");
+      localStorage.removeItem("photoURL");
+      setAvatarClickable(true);
+    });
+  };
 
   const cameras = [
     { id: 1, name: 'Cámara 1', location: 'Pasillo 1A' },
@@ -101,8 +178,17 @@ export default function SwiftVision() {
               <SettingsIcon />
             </IconButton>
             <IconButton>
-              <Avatar src="/placeholder.svg?height=32&width=32" sx={{ width: 32, height: 32 }} />
+              <Avatar
+                src={userPhoto}
+                alt="User Profile"
+                onClick={avatarClickable ? handleSignIn : undefined}
+              />
             </IconButton>
+            {userEmail ? (
+              <IconButton color="inherit" onClick={handleSignOut}>
+                <ExitToAppIcon sx={{ color: "white" }} />
+              </IconButton>
+            ) : null}
           </Box>
         </Toolbar>
       </AppBar>
@@ -129,9 +215,23 @@ export default function SwiftVision() {
                         }
                       />
                       <CardContent>
-                        <PlaceholderImage>
-                          <ImageIcon />
+                        <PlaceholderImage onClick={() => document.getElementById(`file-input-${camera.id}`)?.click()}>
+                          {videoUrls[camera.id] ? (
+                            <video width="100%" height="100%" controls>
+                              <source src={videoUrls[camera.id] || undefined} type="video/mp4" />
+                              Your browser does not support the video tag.
+                            </video>
+                          ) : (
+                            <ImageIcon />
+                          )}
                         </PlaceholderImage>
+                        <input
+                          type="file"
+                          id={`file-input-${camera.id}`}
+                          style={{ display: 'none' }}
+                          accept="video/*"
+                          onChange={(event) => handleFileChange(event, camera.id)}
+                        />
                         <Typography variant="body2" sx={{ mt: 1, color: 'rgba(255,255,255,0.7)' }}>
                           {camera.location}
                         </Typography>
@@ -145,18 +245,22 @@ export default function SwiftVision() {
             {/* Route Map */}
             <Grid item xs={12} md={3}>
               <RouteMap>
-                <Typography variant="h6" gutterBottom sx={{ color: '#4CAF50' }}>
-                  Rutas en tiempo
+                <Typography variant="h6" gutterBottom>
+                  Rutas actuales
                 </Typography>
-                <Box
-                  component="img"
-                  src="/placeholder.svg?height=400&width=300"
-                  alt="Route Map"
-                  sx={{
-                    width: '100%',
-                    height: 'auto',
-                    mt: 2
-                  }}
+                <PlaceholderImage onClick={() => document.getElementById('file-input-route')?.click()}>
+                  {routeImageUrl ? (
+                    <img src={routeImageUrl} alt="Route Map" style={{ width: '100%', height: '100%' }} />
+                  ) : (
+                    <RouteIcon />
+                  )}
+                </PlaceholderImage>
+                <input
+                  type="file"
+                  id="file-input-route"
+                  style={{ display: 'none' }}
+                  accept="image/*"
+                  onChange={handleRouteImageChange}
                 />
               </RouteMap>
             </Grid>
