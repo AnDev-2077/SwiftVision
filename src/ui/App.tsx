@@ -12,7 +12,8 @@ import {
   CardContent,
   Avatar,
   Tabs,
-  Tab
+  Tab,
+  Modal
 } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import SettingsIcon from '@mui/icons-material/Settings'
@@ -23,6 +24,10 @@ import RouteIcon from '@mui/icons-material/Route'
 import { initializeApp } from "firebase/app"
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import ExitToAppIcon from "@mui/icons-material/ExitToApp"
+import DeleteIcon from "@mui/icons-material/Delete"
+import DownloadIcon from "@mui/icons-material/Download"
+import FileUploadIcon from "@mui/icons-material/CloudUpload"
+import UploadIcon from '@mui/icons-material/Upload'
 
 // Firebase configuration
 const firebaseConfig = {
@@ -93,6 +98,11 @@ export default function SwiftVision() {
   const [userPhoto, setUserPhoto] = useState<string | null>(null)
   const [avatarClickable, setAvatarClickable] = useState<boolean>(true)
 
+  const handleSettingsOpen = () => setSettingsOpen(true);
+  const handleSettingsClose = () => setSettingsOpen(false);
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue)
   }
@@ -149,6 +159,74 @@ export default function SwiftVision() {
     });
   };
 
+
+  const ModalContent = styled(Box)(({ theme }) => ({
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "80%",
+    maxWidth: 900,
+    backgroundColor: "#1a1a1a",
+    color: "white",
+    //border: "2px solid #4CAF50",
+    borderRadius: theme.spacing(1),
+    boxShadow: 24,
+    display: "flex",
+    padding: theme.spacing(3),
+  }));
+
+  const LeftPanel = styled(Box)(({ theme }) => ({
+    width: "30%",
+    paddingRight: theme.spacing(2),
+    "& button": {
+      textTransform: "none",
+      padding: theme.spacing(1),
+      color: "white",
+      backgroundColor: "#333",
+      borderRadius: theme.spacing(1),
+      width: "100%",
+      "&:hover": {
+        backgroundColor: "#4CAF50",
+      },
+    },
+  }));
+
+  //panel derecho
+  const RightPanel = styled(Box)(({ theme }) => ({
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    height: "100%",
+    borderRadius: theme.spacing(1),
+    overflow: "hidden",
+  }));
+
+const ImagePlaceholderWrapper = styled(Box)(({ theme }) => ({
+  width: "98%",
+  height: "50vh",
+  backgroundColor: "8f8f8f",
+  borderRadius: theme.spacing(1),
+  //border: "2px solid #4CAF50",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  marginTop: theme.spacing(2),
+  position: "relative",
+}));
+
+  const IconButtonWrapper = styled(Box)(({ theme }) => ({
+    position: "absolute",
+    bottom: theme.spacing(2),
+    right: theme.spacing(2),
+    display: "flex",
+    gap: theme.spacing(1),
+    justifyContent: "flex-end",
+    alignItems: "center",
+  }));
+
   const cameras = [
     { id: 1, name: 'Cámara 1', location: 'Pasillo 1A' },
     { id: 2, name: 'Cámara 2', location: 'Pasillo 2A' },
@@ -174,7 +252,7 @@ export default function SwiftVision() {
             <IconButton color="inherit">
               <NotificationsIcon />
             </IconButton>
-            <IconButton color="inherit">
+            <IconButton color="inherit" onClick={handleSettingsOpen}>
               <SettingsIcon />
             </IconButton>
             <IconButton>
@@ -277,6 +355,63 @@ export default function SwiftVision() {
           </Typography>
         )}
       </Box>
+    
+      <Modal open={settingsOpen} onClose={handleSettingsClose}>
+        <ModalContent>
+          <LeftPanel>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: "bold", marginBottom: 6 }}
+            >
+              Configuración
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ marginBottom: 1, marginLeft: 3, color: "#818181" }}
+            >
+              General
+            </Typography>
+            <Typography variant="body1" sx={{ marginBottom: 1, marginLeft: 3 }}>
+              Administrar plano
+            </Typography>
+            <Typography variant="body1" sx={{ marginBottom: 1, marginLeft: 3 }}>
+              Administrar rutas
+            </Typography>
+            <Typography variant="body1" sx={{ marginBottom: 3, marginLeft: 3 }}>
+              Notificaciones
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ marginBottom: 1, marginLeft: 3, color: "#818181" }}
+            >
+              Cuenta
+            </Typography>
+            <Typography variant="body1" sx={{ marginBottom: 1, marginLeft: 3 }}>
+              Perfil
+            </Typography>
+          </LeftPanel>
+
+          <RightPanel>
+            <Typography variant="body1" sx={{ marginBottom: 1 }}>
+              Plano actual
+            </Typography>
+            <ImagePlaceholderWrapper sx={{ marginBottom: 6 }}>
+              <ImageIcon sx={{ fontSize: 150, color: "#777" }} />
+            </ImagePlaceholderWrapper>
+            <IconButtonWrapper>
+              <IconButton sx={{ color: "#777" }}>
+                <DeleteIcon />
+              </IconButton>
+              <IconButton sx={{ color: "#777" }}>
+                <DownloadIcon />
+              </IconButton>
+              <IconButton sx={{ color: "#777" }}>
+                <UploadIcon/>
+              </IconButton>
+            </IconButtonWrapper>
+          </RightPanel>
+        </ModalContent>
+      </Modal>
     </Box>
-  )
+  );
 }
